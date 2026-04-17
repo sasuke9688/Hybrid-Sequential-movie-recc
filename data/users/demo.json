@@ -1,0 +1,14 @@
+{
+  "username": "demo",
+  "password_hash": "dec12bfa83ff62ce2bc21362974f7d3a1c755f6c750012119884f4a863e28e0a",
+  "password_salt": "faed32d31a45221f3d4877a00bb014cd",
+  "created_at": 1773382730.7171237,
+  "watch_history": [
+    {
+      "index": 1,
+      "title": "Interstellar",
+      "release_year": 2014,
+      "timestamp": 1773382748.3136852
+    }
+  ]
+}

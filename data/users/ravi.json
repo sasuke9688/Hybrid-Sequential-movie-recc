@@ -1,0 +1,20 @@
+{
+  "username": "ravi",
+  "password_hash": "55af874bd3ec6ac9f366d57e943b1d110ae14023fe266f4cdac5010c2fa31611",
+  "password_salt": "774458d9a21c2a66a41c3c519ead3fb0",
+  "created_at": 1773515985.6011636,
+  "watch_history": [
+    {
+      "index": 68979,
+      "title": "The Hero",
+      "release_year": 2016,
+      "timestamp": 1773515997.9346566
+    },
+    {
+      "index": 49010,
+      "title": "Ignatius of Loyola",
+      "release_year": 2016,
+      "timestamp": 1773516002.2804897
+    }
+  ]
+}

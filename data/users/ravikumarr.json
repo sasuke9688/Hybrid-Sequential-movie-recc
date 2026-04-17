@@ -1,0 +1,93 @@
+{
+  "username": "ravikumarr",
+  "password_hash": "8a9aa785490798efbc8609eb450e4ddf1c9fae77d8b5bdf9109aaecec4492b15",
+  "password_salt": "e28dca31a410346fc34dbdb18aaddb74",
+  "created_at": 1774685976.4593766,
+  "watch_history": [
+    {
+      "index": 32211,
+      "title": "The Astronaut",
+      "release_year": 2023,
+      "timestamp": 1774685982.7603433
+    },
+    {
+      "index": 1,
+      "title": "Interstellar",
+      "release_year": 2014,
+      "timestamp": 1774685982.7633455
+    },
+    {
+      "index": 54,
+      "title": "The Martian",
+      "release_year": 2015,
+      "timestamp": 1774685982.7662258
+    },
+    {
+      "index": 69,
+      "title": "WALL\u00b7E",
+      "release_year": 2008,
+      "timestamp": 1774685982.7682264
+    },
+    {
+      "index": 164,
+      "title": "Blade Runner",
+      "release_year": 1982,
+      "timestamp": 1774685982.7712262
+    },
+    {
+      "index": 7,
+      "title": "Fight Club",
+      "release_year": 1999,
+      "timestamp": 1774685982.7731159
+    },
+    {
+      "index": 20362,
+      "title": "Vishwaroopam",
+      "release_year": 2013,
+      "timestamp": 1774688196.1844804,
+      "rating": 4
+    },
+    {
+      "index": 41603,
+      "title": "Vishwaroopam II",
+      "release_year": 2018,
+      "timestamp": 1774688196.1914809,
+      "rating": 4
+    },
+    {
+      "index": 40612,
+      "title": "Pudhupettai",
+      "release_year": 2006,
+      "timestamp": 1774688196.1944788,
+      "rating": 4
+    },
+    {
+      "index": 23764,
+      "title": "Ponniyin Selvan: Part I",
+      "release_year": 2022,
+      "timestamp": 1774688196.2014823,
+      "rating": 5
+    },
+    {
+      "index": 44901,
+      "title": "Mahaan",
+      "release_year": 2022,
+      "timestamp": 1774688196.2054775,
+      "rating": 3
+    },
+    {
+      "index": 31021,
+      "title": "Jailer",
+      "release_year": 2023,
+      "timestamp": 1774688196.2094796,
+      "rating": 2
+    },
+    {
+      "index": 24627,
+      "title": "Bigil",
+      "release_year": 2019,
+      "timestamp": 1774688196.2124953,
+      "rating": 3
+    }
+  ]
+}
