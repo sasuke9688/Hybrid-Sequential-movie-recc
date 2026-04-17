@@ -3,7 +3,6 @@ name: Synchronize Deployment to Hugging Face
 on:
   push:
     branches: [main]
-  # Trigger this workflow automatically after the matrix retraining finishes
   workflow_run:
     workflows: ["Automated Hybrid Model Retraining", "Fast Live Rating Synchronization"]
     types:
@@ -17,12 +16,39 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1 # We only need the latest files, not the history
           lfs: true
       
-      - name: Push Code and Models to Hugging Face
+      - name: Deploy Clean Snapshot to Hugging Face via LFS
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Replace YOUR_HF_USERNAME and YOUR_SPACE_NAME with your exact Hugging Face details
-          git push --force https://sasuke96:$HF_TOKEN@huggingface.co/spaces/sasuke96/hybrid_movie_recc_sasuke main
+          echo "Preparing clean deployment environment..."
+          
+          # 1. Destroy the GitHub history in the runner to bypass legacy blob rejection
+          rm -rf .git
+          
+          # 2. Initialize a fresh Git repository specifically for Hugging Face
+          git init
+          git branch -M main
+          
+          # 3. Configure Git LFS and explicitly track your large matrix/data files
+          git lfs install
+          git lfs track "*.pkl"
+          git lfs track "*.dat"
+          git lfs track "*.csv"
+          
+          # 4. Stage the generated .gitattributes file first
+          git add .gitattributes
+          
+          # 5. Configure bot identity and stage the rest of the files
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          
+          # 6. Create a single, clean deployment commit
+          git commit -m "Auto-Deployment: Fused matrices and architecture synchronized"
+          
+          # 7. Force push the LFS-tracked snapshot to Hugging Face
+          git remote add hf https://sasuke96:${HF_TOKEN}@huggingface.co/spaces/sasuke96/hybrid_movie_recc_sasuke
+          git push --force hf main
