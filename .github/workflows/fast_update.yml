@@ -1,0 +1,45 @@
+name: Fast Live Rating Synchronization
+
+on:
+  schedule:
+    # Executes every 4 hours (adjust as needed)
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  fast-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Initialize Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install System Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Execute Fast SVD Factorization
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "Executing lightweight live model update..."
+          python update_live_model.py
+
+      - name: Commit and Push Updated Matrix Artifacts
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          git add models/*.pkl
+          
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Fast Supabase SVD sync" && git push)
