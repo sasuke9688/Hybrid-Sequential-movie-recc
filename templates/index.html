@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Movie Recommendation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Auth Bar -->
+    <div class="auth-bar" id="authBar">
+        <!-- Logged out state -->
+        <div id="authLoggedOut" class="auth-state">
+            <button class="btn-auth" id="showLoginBtn">Log In</button>
+            <button class="btn-auth btn-auth-register" id="showRegisterBtn">Register</button>
+        </div>
+        <!-- Logged in state -->
+        <div id="authLoggedIn" class="auth-state" style="display:none;">
+            <span class="auth-username" id="authUsername"></span>
+            <button class="btn-auth btn-auth-history" id="showHistoryBtn">Watch History</button>
+            <button class="btn-auth btn-auth-logout" id="logoutBtn">Log Out</button>
+        </div>
+    </div>
+
+    <!-- Login/Register Modal -->
+    <div id="authModal" class="modal-overlay" style="display:none;">
+        <div class="modal">
+            <button class="modal-close" id="authModalClose">&times;</button>
+            <h2 id="authModalTitle">Log In</h2>
+            <div class="form-group">
+                <label for="authUsername">Username</label>
+                <input type="text" id="authUsernameInput" placeholder="Enter username" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="authPassword">Password</label>
+                <input type="password" id="authPasswordInput" placeholder="Enter password" autocomplete="current-password">
+            </div>
+            <div id="authError" class="auth-error" style="display:none;"></div>
+            <button class="btn-recommend" id="authSubmitBtn">Log In</button>
+            <p class="auth-switch" id="authSwitchText"></p>
+        </div>
+    </div>
+
+    <!-- Watch History Modal -->
+    <div id="historyModal" class="modal-overlay" style="display:none;">
+        <div class="modal modal-wide">
+            <button class="modal-close" id="historyModalClose">&times;</button>
+            <h2>Your Watch History</h2>
+            <p class="subtitle" id="historyCount"></p>
+            <div id="historyList" class="history-list"></div>
+        </div>
+    </div>
+
+    <!-- Rating Modal (shown when user selects a movie) -->
+    <div id="ratingModal" class="modal-overlay" style="display:none;">
+        <div class="modal">
+            <button class="modal-close" id="ratingModalClose">&times;</button>
+            <h2>Rate This Movie</h2>
+            <p class="rating-movie-title" id="ratingMovieTitle"></p>
+            <div class="star-rating" id="starRating">
+                <span class="star" data-value="1">&#9733;</span>
+                <span class="star" data-value="2">&#9733;</span>
+                <span class="star" data-value="3">&#9733;</span>
+                <span class="star" data-value="4">&#9733;</span>
+                <span class="star" data-value="5">&#9733;</span>
+            </div>
+            <p class="rating-value" id="ratingValue">Select a rating (1-5 stars)</p>
+            <button class="btn-recommend" id="ratingSubmitBtn">Confirm</button>
+            <p class="auth-switch"><a id="ratingSkipBtn">Skip rating</a></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Hybrid Movie Recommendation System</h1>
+            <p class="subtitle">Collaborative Filtering + Content-Based + Sequential Preference Modeling</p>
+        </header>
+
+        <section class="search-section">
+            <div class="section-header">
+                <h2>Search and Select Movies</h2>
+                <div class="filters-wrap">
+                    <button id="toggleFiltersBtn" class="btn-filter">Filters</button>
+                    <div id="filtersPanel" class="filters-panel" style="display:none;">
+                        <div class="filter-group">
+                            <label for="languageFilter">Language</label>
+                            <select id="languageFilter">
+                                <option value="">All languages</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Genres</label>
+                            <div id="genreFilterList" class="genre-filter-list"></div>
+                        </div>
+                        <div class="filter-actions">
+                            <button id="clearFiltersBtn" class="btn-filter-secondary" type="button">Clear</button>
+                            <button id="applyFiltersBtn" class="btn-filter-apply" type="button">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="activeFiltersSummary" class="active-filters-summary" style="display:none;"></div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Type a movie title to search..."
+                       autocomplete="off">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+        </section>
+
+        <section class="selected-section">
+            <h2>Your Selected Movies <span id="selectedCount">(0)</span></h2>
+            <div id="selectedMovies" class="selected-movies">
+                <p class="empty-msg">No movies selected yet. Search and click to add movies.</p>
+            </div>
+            <button id="recommendBtn" class="btn-recommend" disabled>
+                Get Recommendations
+            </button>
+        </section>
+
+        <section id="recommendationsSection" class="recommendations-section" style="display:none;">
+            <h2>Recommended Movies</h2>
+            <div id="weightInfo" class="weight-info" style="display:none;"></div>
+            <div id="recommendations" class="recommendations-grid"></div>
+        </section>
+
+        <div id="loading" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p>Generating recommendations...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
