@@ -19,7 +19,7 @@ jobs:
       - name: Initialize Python Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11' # CRITICAL FIX: Aligned with scikit-learn 1.8.0 requirements
           cache: 'pip'
 
       - name: Install System Dependencies
