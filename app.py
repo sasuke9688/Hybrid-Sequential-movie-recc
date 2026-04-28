@@ -3,6 +3,8 @@ Flask web application for the hybrid movie recommendation system.
 Provides API endpoints and serves the frontend.
 Includes user authentication, watch history, and language filtering.
 """
+import os
+os.system("python evaluation.py")
 
 import os
 from functools import wraps
