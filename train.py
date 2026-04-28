@@ -183,7 +183,7 @@ def run_quick_evaluation(artifacts):
     results = run_offline_evaluation(
         artifacts=artifacts,
         output_dir=EVALUATION_DIR,
-        k_values=(5, 10, 20),
+        k_values=( 10,12,14,16,18,20,22,25),
         positive_rating=4,
         min_history=5,
         holdout_size=2,
