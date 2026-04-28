@@ -357,6 +357,13 @@ def recommend():
 
 
 # ──────────────────────────── Stats ────────────────────────────
+@app.route('/run-eval')
+def run_eval():
+    import evaluate # your eval script
+    # Assuming your evaluate script has a function that returns the results
+    results = evaluate.run_evaluation() 
+    return str(results)
+
 
 @app.route("/api/stats", methods=["GET"])
 def stats():
