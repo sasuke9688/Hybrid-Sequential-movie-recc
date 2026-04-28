@@ -6,8 +6,8 @@ sequential preference modeling, and temporal filtering.
 Dynamic weight rules (refined):
   - 0 movies       : pure content + popularity (no user signal at all)
   - 1–2 movies     : heavy content, tiny collab
-  - 3–6 movies     : cold-start — content dominates, collab growing
-  - 7–14 movies    : warming — balanced, collab rising
+  - 3–6 movies     : cold-start — content dominates, collab catching up
+  - 7–14 movies    : warming — collab takes the lead
   - 15+ movies     : warm — collab leads; sequential boosted if recent burst
   - recent burst   : sequential takes over when user is actively watching
 """
@@ -103,17 +103,6 @@ class RecommendationEngine:
     def compute_dynamic_weights(interaction_history, current_selection_count=0):
         """
         Compute dynamic alpha/beta/gamma/delta based on the user's current signal volume.
-
-        Granular regimes by total movie count:
-          new_user      (0)    : pure content + popularity — no user signal
-          very_cold     (1–2)  : heavy content, tiny collab
-          cold_start    (3–6)  : content leads, collab growing
-          warming       (7–14) : balanced, collab rising
-          warm_sparse   (15+, low recent): collab leads, stable preferences
-          moderate_recent(15+, 3–4 recent): collab + growing sequential
-          recent_burst  (15+, 5+ recent): sequential takes over
-
-        Returns: (alpha, beta, gamma, delta, decay_rate, info_dict)
         """
         now = datetime.now().timestamp()
         total = len(interaction_history) if interaction_history else 0
@@ -132,36 +121,36 @@ class RecommendationEngine:
         if total == 0:
             # No watch history — rely entirely on content similarity + popularity
             alpha = 0.00
-            beta  = 0.60
+            beta  = 0.85
             gamma = 0.00
-            delta = 0.40
+            delta = 0.15
             decay = 0.01
             regime = "new_user"
 
         elif total <= 2:
-            # 1–2 movies: tiny collab signal, mostly content + popularity
-            alpha = 0.10
-            beta  = 0.55
-            gamma = 0.05
-            delta = 0.30
+            # 1–2 movies: tiny collab signal, mostly content + tiny popularity
+            alpha = 0.15
+            beta  = 0.70
+            gamma = 0.10
+            delta = 0.05
             decay = 0.02
             regime = "very_cold"
 
         elif total <= 6:
-            # 3–6 movies: content dominant, collab starting to matter
-            alpha = 0.20
-            beta  = 0.45
-            gamma = 0.10
-            delta = 0.25
+            # 3–6 movies: content dominant, collab catching up
+            alpha = 0.35
+            beta  = 0.45  
+            gamma = 0.15
+            delta = 0.05
             decay = 0.02
             regime = "cold_start"
 
         elif total <= 14:
-            # 7–14 movies: warming — collab and content balanced
-            alpha = 0.35
-            beta  = 0.30
-            gamma = 0.20
-            delta = 0.15
+            # 7–14 movies: warming — collab takes the lead
+            alpha = 0.45
+            beta  = 0.30  
+            gamma = 0.20  
+            delta = 0.05
             decay = 0.04
             regime = "warming"
 
@@ -171,24 +160,24 @@ class RecommendationEngine:
                 # Heavy recent activity — sequential captures current mood
                 alpha = 0.35
                 beta  = 0.10
-                gamma = 0.45
-                delta = 0.10
+                gamma = 0.53
+                delta = 0.02
                 decay = 0.10
                 regime = "recent_burst"
             elif recent_count >= 3:
                 # Moderate recent activity
-                alpha = 0.40
+                alpha = 0.45
                 beta  = 0.15
-                gamma = 0.32
-                delta = 0.13
+                gamma = 0.37
+                delta = 0.03
                 decay = 0.06
                 regime = "moderate_recent"
             else:
                 # Few recent movies — stable long-term profile
-                alpha = 0.52
-                beta  = 0.23
-                gamma = 0.10
-                delta = 0.15
+                alpha = 0.55
+                beta  = 0.25
+                gamma = 0.15
+                delta = 0.05
                 decay = 0.03
                 regime = "warm_sparse"
 
@@ -318,19 +307,6 @@ class RecommendationEngine:
                   candidate_indices=None, apply_temporal_filter=True):
         """
         Generate hybrid recommendations with dynamic weight adjustment.
-
-        Args:
-            selected_movies : list of movie dicts (index, title, release_year, [rating])
-            top_k           : number of results to return
-            alpha/beta/gamma/delta : explicit weight overrides (all or none)
-            watch_history   : user's watch history list (from user_manager)
-            language_filter : ISO 639-1 code (e.g. "en") or None / "all" for no filter
-            genre_filters   : optional list of genre names to match
-            candidate_indices : optional iterable restricting recommendations to
-                                a subset of TMDB row indices
-            apply_temporal_filter : whether to enforce the recency-based year filter
-
-        Returns: (DataFrame, weight_info_dict)
         """
         # Merge watch history with selections
         all_movies = list(selected_movies)
@@ -520,8 +496,8 @@ def _regime_description(regime):
     descriptions = {
         "new_user":        "No history yet — using content similarity and popularity.",
         "very_cold":       "Very few movies (1–2) — content-based filtering dominates.",
-        "cold_start":      "Few movies (3–6) — content leads, collaborative filtering growing.",
-        "warming":         "Building history (7–14) — balanced collaborative and content.",
+        "cold_start":      "Few movies (3–6) — content leads, collaborative filtering catching up.",
+        "warming":         "Building history (7–14) — collaborative taking the lead.",
         "warm_sparse":     "Good history, mostly older — collaborative filtering leads.",
         "moderate_recent": "Active recently — sequential preferences boosted.",
         "recent_burst":    "High recent activity — sequential preferences dominate.",
