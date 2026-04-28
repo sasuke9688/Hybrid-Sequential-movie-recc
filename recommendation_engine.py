@@ -115,35 +115,36 @@ class RecommendationEngine:
         decay = DECAY_RATE
 
         # ── Regime selection ──────────────────────────────────────────
+        # POPULARITY (delta) SOFTENED ACROSS ALL REGIMES 
         if total == 0:
             alpha = 0.00
-            beta  = 0.60
+            beta  = 0.70  # Increased Content reliance
             gamma = 0.00
-            delta = 0.40
+            delta = 0.30  # Reduced from 0.40
             decay = 0.01
             regime = "new_user"
 
         elif total <= 2:
             alpha = 0.10
-            beta  = 0.55
+            beta  = 0.65  # Increased Content reliance
             gamma = 0.05
-            delta = 0.30
+            delta = 0.20  # Reduced from 0.30
             decay = 0.02
             regime = "very_cold"
 
         elif total <= 6:
-            alpha = 0.20
-            beta  = 0.45
+            alpha = 0.25  # Shifted weight to Collab
+            beta  = 0.50
             gamma = 0.10
-            delta = 0.25
+            delta = 0.15  # Reduced from 0.25
             decay = 0.02
             regime = "cold_start"
 
         elif total <= 14:
-            alpha = 0.35
+            alpha = 0.40  # Shifted weight to Collab
             beta  = 0.30
             gamma = 0.20
-            delta = 0.15
+            delta = 0.10  # Reduced from 0.15
             decay = 0.04
             regime = "warming"
 
@@ -151,22 +152,22 @@ class RecommendationEngine:
             if recent_count >= 5:
                 alpha = 0.35
                 beta  = 0.10
-                gamma = 0.45
-                delta = 0.10
+                gamma = 0.50  # Shifted weight to Sequential
+                delta = 0.05  # Reduced from 0.10
                 decay = 0.10
                 regime = "recent_burst"
             elif recent_count >= 3:
-                alpha = 0.40
+                alpha = 0.45  # Shifted weight to Collab
                 beta  = 0.15
                 gamma = 0.32
-                delta = 0.13
+                delta = 0.08  # Reduced from 0.13
                 decay = 0.06
                 regime = "moderate_recent"
             else:
-                alpha = 0.52
+                alpha = 0.62  # Shifted weight to Collab
                 beta  = 0.23
                 gamma = 0.10
-                delta = 0.15
+                delta = 0.05  # Reduced from 0.15
                 decay = 0.03
                 regime = "warm_sparse"
 
@@ -326,24 +327,13 @@ class RecommendationEngine:
         seq_scores    = _normalize_scores(self.compute_sequential_scores(seq_vector))
         pop_scores    = self.compute_popularity_scores()
 
+        # Pure Hybrid score (Softened weights naturally lower popularity priority)
         final_scores = (
             alpha * collab_scores
             + beta  * content_scores
             + gamma * seq_scores
             + delta * pop_scores
         )
-
-        # ─── OPTIMAL MERGE: REGIME-AWARE DIVERSITY PENALTY ───
-        # Apply the popularity penalty ONLY to users with enough history (warm users).
-        # This breaks the filter bubble for active users while protecting the Hit Rate 
-        # for brand new (cold-start) users who need safe, popular recommendations.
-        current_regime = weight_info.get("regime", "manual")
-        warm_regimes = ["warming", "warm_sparse", "moderate_recent", "recent_burst"]
-        
-        if current_regime in warm_regimes:
-            popularity_array = self.tmdb_df["popularity"].values
-            penalty_factor = np.log(2.0 + popularity_array)
-            final_scores = final_scores / penalty_factor
 
         if apply_temporal_filter:
             temporal_mask, _ = self.apply_temporal_filter(all_movies)
