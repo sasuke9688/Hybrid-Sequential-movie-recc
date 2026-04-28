@@ -701,3 +701,4 @@ if __name__ == "__main__":
     if os.path.exists(metrics_path):
         print("\n=== FULL K METRICS ===")
         print(pd.read_csv(metrics_path))
+        print(pd.read_csv("evaluation_outputs/regime_metrics.csv"))
