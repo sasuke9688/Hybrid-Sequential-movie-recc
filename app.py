@@ -357,15 +357,6 @@ def recommend():
 
 
 # ──────────────────────────── Stats ────────────────────────────
-# ------------------------- Stats -------------------------
-@app.route('/run-eval')
-def run_eval():
-    import evaluation  # <-- Changed from 'evaluate' to 'evaluation'
-    
-    # Note: this assumes the function inside evaluation.py is named run_evaluation()
-    results = evaluation.run_evaluation()
-    return str(results)
-
 
 @app.route("/api/stats", methods=["GET"])
 def stats():
