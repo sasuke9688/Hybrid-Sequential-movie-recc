@@ -55,7 +55,6 @@ class RecommendationEngine:
     def get_available_languages(self, min_count=5):
         """
         Return a sorted list of languages present in the TMDB catalog.
-        Each entry: {"code": "en", "label": "English", "count": 42000}
         """
         if "original_language" not in self.tmdb_df.columns:
             return []
@@ -70,14 +69,12 @@ class RecommendationEngine:
                     "label": get_language_label(code),
                     "count": int(cnt),
                 })
-        # Sort by count descending, then alphabetically
         langs.sort(key=lambda x: (-x["count"], x["label"]))
         return langs
 
     def get_available_genres(self, min_count=MIN_GENRE_COUNT):
         """
         Return a sorted list of genres present in the TMDB catalog.
-        Each entry: {"name": "Action", "count": 12000}
         """
         genre_counts = {}
         for genres in self.tmdb_df.get("genres", []):
@@ -119,65 +116,57 @@ class RecommendationEngine:
 
         # ── Regime selection ──────────────────────────────────────────
         if total == 0:
-            # No watch history — rely entirely on content similarity + popularity
             alpha = 0.00
-            beta  = 0.85
+            beta  = 0.60
             gamma = 0.00
-            delta = 0.15
+            delta = 0.40
             decay = 0.01
             regime = "new_user"
 
         elif total <= 2:
-            # 1–2 movies: tiny collab signal, mostly content + tiny popularity
-            alpha = 0.15
-            beta  = 0.70
-            gamma = 0.10
-            delta = 0.05
+            alpha = 0.10
+            beta  = 0.55
+            gamma = 0.05
+            delta = 0.30
             decay = 0.02
             regime = "very_cold"
 
         elif total <= 6:
-            # 3–6 movies: content dominant, collab catching up
-            alpha = 0.35
-            beta  = 0.45  
-            gamma = 0.15
-            delta = 0.05
+            alpha = 0.20
+            beta  = 0.45
+            gamma = 0.10
+            delta = 0.25
             decay = 0.02
             regime = "cold_start"
 
         elif total <= 14:
-            # 7–14 movies: warming — collab takes the lead
-            alpha = 0.45
-            beta  = 0.30  
-            gamma = 0.20  
-            delta = 0.05
+            alpha = 0.35
+            beta  = 0.30
+            gamma = 0.20
+            delta = 0.15
             decay = 0.04
             regime = "warming"
 
         else:
-            # 15+ movies: warm user — collab is the primary signal
             if recent_count >= 5:
-                # Heavy recent activity — sequential captures current mood
                 alpha = 0.35
                 beta  = 0.10
-                gamma = 0.53
-                delta = 0.02
+                gamma = 0.45
+                delta = 0.10
                 decay = 0.10
                 regime = "recent_burst"
             elif recent_count >= 3:
-                # Moderate recent activity
-                alpha = 0.45
+                alpha = 0.40
                 beta  = 0.15
-                gamma = 0.37
-                delta = 0.03
+                gamma = 0.32
+                delta = 0.13
                 decay = 0.06
                 regime = "moderate_recent"
             else:
-                # Few recent movies — stable long-term profile
-                alpha = 0.55
-                beta  = 0.25
-                gamma = 0.15
-                delta = 0.05
+                alpha = 0.52
+                beta  = 0.23
+                gamma = 0.10
+                delta = 0.15
                 decay = 0.03
                 regime = "warm_sparse"
 
@@ -199,10 +188,6 @@ class RecommendationEngine:
     # ──────────── User vector building ────────────
 
     def build_user_vector_from_movies(self, selected_movies):
-        """
-        Build a user preference vector from selected movies.
-        Rating-weighted average when ratings are available.
-        """
         if not selected_movies:
             return np.zeros(self.tmdb_latent.shape[1])
 
@@ -223,10 +208,6 @@ class RecommendationEngine:
         return np.average(vectors, axis=0, weights=weights)
 
     def sequential_preference_vector(self, selected_movies, decay_rate=None):
-        """
-        Build a sequential preference vector with time-decay weighting.
-        Ratings further boost the weight of highly-rated recent movies.
-        """
         if decay_rate is None:
             decay_rate = DECAY_RATE
 
@@ -283,7 +264,6 @@ class RecommendationEngine:
         return self.tmdb_df["popularity_norm"].values
 
     def apply_temporal_filter(self, selected_movies):
-        """release_year >= max(newest_user_movie − 5, current_year − 20)"""
         current_year = datetime.now().year
         if selected_movies:
             years = [
@@ -305,10 +285,7 @@ class RecommendationEngine:
                   alpha=None, beta=None, gamma=None, delta=None,
                   watch_history=None, language_filter=None, genre_filters=None,
                   candidate_indices=None, apply_temporal_filter=True):
-        """
-        Generate hybrid recommendations with dynamic weight adjustment.
-        """
-        # Merge watch history with selections
+        
         all_movies = list(selected_movies)
         history_indices = set()
         if watch_history:
@@ -318,7 +295,6 @@ class RecommendationEngine:
                 if h["index"] not in sel_set:
                     all_movies.append(h)
 
-        # Compute dynamic weights
         if alpha is None or beta is None or gamma is None or delta is None:
             d_alpha, d_beta, d_gamma, d_delta, d_decay, weight_info = \
                 self.compute_dynamic_weights(
@@ -342,17 +318,14 @@ class RecommendationEngine:
                 "regime_description": "Manually specified weights.",
             }
 
-        # Build user vectors
         user_vector = self.build_user_vector_from_movies(all_movies)
         seq_vector  = self.sequential_preference_vector(all_movies, decay_rate=decay_rate)
 
-        # Compute component scores
         collab_scores = _normalize_scores(self.compute_collaborative_scores(user_vector))
         content_scores = _normalize_scores(self.compute_content_scores(user_vector))
         seq_scores    = _normalize_scores(self.compute_sequential_scores(seq_vector))
         pop_scores    = self.compute_popularity_scores()
 
-        # Hybrid score
         final_scores = (
             alpha * collab_scores
             + beta  * content_scores
@@ -360,19 +333,22 @@ class RecommendationEngine:
             + delta * pop_scores
         )
 
-        # ─── OPTION A: THE POPULARITY PENALTY ───
-        # Mathematically penalize movies with massive global popularity 
-        # to force the engine to explore the long-tail catalog.
-        popularity_array = self.tmdb_df["popularity"].values
-        penalty_factor = np.log(2.0 + popularity_array)
-        final_scores = final_scores / penalty_factor
+        # ─── OPTIMAL MERGE: REGIME-AWARE DIVERSITY PENALTY ───
+        # Apply the popularity penalty ONLY to users with enough history (warm users).
+        # This breaks the filter bubble for active users while protecting the Hit Rate 
+        # for brand new (cold-start) users who need safe, popular recommendations.
+        current_regime = weight_info.get("regime", "manual")
+        warm_regimes = ["warming", "warm_sparse", "moderate_recent", "recent_burst"]
+        
+        if current_regime in warm_regimes:
+            popularity_array = self.tmdb_df["popularity"].values
+            penalty_factor = np.log(2.0 + popularity_array)
+            final_scores = final_scores / penalty_factor
 
-        # Temporal filter
         if apply_temporal_filter:
             temporal_mask, _ = self.apply_temporal_filter(all_movies)
             final_scores[~temporal_mask] = -np.inf
 
-        # Language filter (NEW)
         if language_filter and language_filter.lower() not in ("all", ""):
             if "original_language" in self.tmdb_df.columns:
                 lang_mask = (
@@ -399,13 +375,11 @@ class RecommendationEngine:
             candidate_mask[valid_candidate_indices] = True
             final_scores[~candidate_mask] = -np.inf
 
-        # Exclude already-watched / selected movies
         exclude = {m["index"] for m in selected_movies} | history_indices
         for idx in exclude:
             if 0 <= idx < len(final_scores):
                 final_scores[idx] = -np.inf
 
-        # Top-K
         top_indices = np.argsort(final_scores)[::-1][:top_k]
 
         results = []
@@ -430,14 +404,12 @@ class RecommendationEngine:
     # ──────────── Search ────────────
 
     def search_movies(self, query, limit=20, language_filter=None, genre_filters=None):
-        """Search TMDB movies by title substring, with optional language filter."""
         query_lower = query.lower().strip()
         if not query_lower:
             return []
 
         mask = self.tmdb_df["title"].str.lower().str.contains(query_lower, na=False)
 
-        # Language filter (NEW)
         if language_filter and language_filter.lower() not in ("all", ""):
             if "original_language" in self.tmdb_df.columns:
                 lang_mask = (
@@ -472,10 +444,7 @@ class RecommendationEngine:
         return results
 
 
-# ──────────── Helpers ────────────
-
 def _normalize_scores(scores):
-    """Normalize a score array to [0, 1]."""
     min_val = scores.min()
     max_val = scores.max()
     if max_val - min_val == 0:
@@ -484,7 +453,6 @@ def _normalize_scores(scores):
 
 
 def _normalize_genre_filters(genre_filters):
-    """Normalize incoming genre filters into a lowercase set."""
     if not genre_filters:
         return set()
 
@@ -499,7 +467,6 @@ def _normalize_genre_filters(genre_filters):
 
 
 def _regime_description(regime):
-    """Human-readable description of the active weight regime."""
     descriptions = {
         "new_user":        "No history yet — using content similarity and popularity.",
         "very_cold":       "Very few movies (1–2) — content-based filtering dominates.",
