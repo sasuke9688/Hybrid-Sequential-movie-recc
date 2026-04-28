@@ -695,3 +695,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+import pandas as pd
+print("\n=== FULL K METRICS ===")
+print(pd.read_csv("evaluation_outputs/metrics_by_k.csv"))
