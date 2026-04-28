@@ -15,4 +15,5 @@ COPY . .
 EXPOSE 7860
 
 # Execute Gunicorn bound to port 7860 with memory-safe worker configurations
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--threads", "2", "--timeout", "120", "app:app"]
+CMD ["python", "evaluation.py"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--threads", "2", "--timeout", "120", "app:app"]
