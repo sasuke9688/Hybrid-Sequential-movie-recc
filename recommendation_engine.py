@@ -360,6 +360,13 @@ class RecommendationEngine:
             + delta * pop_scores
         )
 
+        # ─── OPTION A: THE POPULARITY PENALTY ───
+        # Mathematically penalize movies with massive global popularity 
+        # to force the engine to explore the long-tail catalog.
+        popularity_array = self.tmdb_df["popularity"].values
+        penalty_factor = np.log(2.0 + popularity_array)
+        final_scores = final_scores / penalty_factor
+
         # Temporal filter
         if apply_temporal_filter:
             temporal_mask, _ = self.apply_temporal_filter(all_movies)
